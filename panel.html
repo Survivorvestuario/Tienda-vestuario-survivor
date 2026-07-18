@@ -2,13 +2,17 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema SURVIVOR - Gestión Integral</title>
     <style>
-        body { font-family: sans-serif; background-color: #f4f4f9; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f4f9; padding: 20px; margin: 0; }
+        .navbar-admin { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #2c3e50; padding: 15px 20px; border-radius: 8px; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .navbar-admin h1 { margin: 0; font-size: 22px; color: white; }
         .box { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
-        input, select { padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 8px 12px; cursor: pointer; background: #2c3e50; color: white; border: none; border-radius: 4px; margin: 2px; }
+        input, select { padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 8px 12px; cursor: pointer; background: #2c3e50; color: white; border: none; border-radius: 4px; margin: 2px; font-weight: bold; }
+        button:hover { opacity: 0.9; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
         th { background: #34495e; color: white; }
@@ -20,17 +24,24 @@
 </head>
 <body>
 
-    <h1>Panel de Gestión SURVIVOR</h1>
+    <!-- BARRA SUPERIOR DE CONEXIÓN CON CLIENTES -->
+    <div class="navbar-admin">
+        <h1>Panel de Gestión SURVIVOR</h1>
+        <button onclick="window.location.href='./clientes.html'" style="background: #27ae60; padding: 10px 18px; border-radius: 6px;">
+            🛒 Ver Vista Clientes (Tienda)
+        </button>
+    </div>
 
+    <!-- 1. GESTIÓN DE INVERSIÓN -->
     <div class="box">
         <h2>1. Gestión de Inversión por Lote</h2>
         <div class="grid">
             <input type="text" id="iNombreLote" placeholder="Nombre del Lote">
             <input type="number" id="iTela" placeholder="Inversión Tela $">
             <input type="number" id="iConf" placeholder="Inversión Conf. $">
-            <input type="number" id="iCant" placeholder="Cantidad Prendas">
+            <input type="number" id="iCant" placeholder="Cantidad">
         </div>
-        <button onclick="registrarLote()" style="background: #2980b9;">Registrar Lote</button>
+        <button onclick="registrarLote()" style="background: #2980b9; margin-top: 10px;">Registrar Lote</button>
         <table id="tablaLotes">
             <thead>
                 <tr><th>Lote</th><th>Tela</th><th>Conf.</th><th>Suma</th><th>Cant.</th><th>Costo Unit.</th><th>Acción</th></tr>
@@ -39,6 +50,7 @@
         </table>
     </div>
 
+    <!-- 2. CATÁLOGO -->
     <div class="box">
         <h2>2. Catálogo (Productos)</h2>
         <div class="grid">
@@ -56,12 +68,13 @@
             <input type="number" id="prodPrecio" placeholder="Precio Venta $">
             <input type="number" id="prodStock" placeholder="Stock Inicial">
         </div>
-        <button onclick="agregarPrenda()">Agregar al Catálogo</button>
+        <button onclick="agregarPrenda()" style="margin-top: 10px;">Agregar al Catálogo</button>
         <table id="tablaCatalogo"></table>
     </div>
 
+    <!-- 3. REGISTRO DE VENTAS MANUALES -->
     <div class="box">
-        <h2>3. Registro de Ventas</h2>
+        <h2>3. Registro de Ventas Manuales</h2>
         <div class="grid">
             <input type="text" id="cliNombre" placeholder="Nombre Cliente">
             <input type="text" id="cliTel" placeholder="Teléfono">
@@ -70,16 +83,18 @@
             <input type="number" id="vCant" placeholder="Cantidad (Unidad)">
             <select id="vEstadoPago"><option value="Pagado">Pagado</option><option value="Pendiente">Pendiente</option></select>
         </div>
-        <button onclick="registrarVenta()" style="background: #27ae60;">Registrar Venta</button>
+        <button onclick="registrarVenta()" style="background: #27ae60; margin-top: 10px;">Registrar Venta</button>
     </div>
 
+    <!-- 4. HISTORIAL Y RESUMEN -->
     <div class="box">
-        <h2>4. Historial y Resumen</h2>
+        <h2>4. Historial y Resumen General</h2>
         <p><strong>Capital Recuperado:</strong> <span id="resCap">$0</span> | <strong>Ganancia Total:</strong> <span id="resGan">$0</span></p>
         <table id="tablaVentas"></table>
     </div>
 
     <script>
+        // Carga centralizada desde LocalStorage (Compartido con clientes.html)
         let lotes = JSON.parse(localStorage.getItem('lotes')) || [];
         let cat = JSON.parse(localStorage.getItem('cat')) || [];
         let hist = JSON.parse(localStorage.getItem('hist')) || [];
@@ -94,20 +109,31 @@
         ajustarPrecioAutomatico();
 
         function registrarLote() {
-            let nombre = document.getElementById('iNombreLote').value;
+            let nombre = document.getElementById('iNombreLote').value.trim();
             let tela = parseFloat(document.getElementById('iTela').value) || 0;
             let conf = parseFloat(document.getElementById('iConf').value) || 0;
             let cant = parseInt(document.getElementById('iCant').value) || 0;
+            if(!nombre) return alert("Asigna un nombre al lote");
+            
             let sumaInversion = tela + conf;
             let costoUnit = cant > 0 ? (sumaInversion) / cant : 0;
             lotes.push({ nombre, tela, conf, sumaInversion, cant, costoUnit });
             actualizarTodo();
+            
+            // Limpiar campos de lote
+            document.getElementById('iNombreLote').value = "";
+            document.getElementById('iTela').value = "";
+            document.getElementById('iConf').value = "";
+            document.getElementById('iCant').value = "";
         }
 
         function agregarPrenda() {
+            let loteSeleccionado = document.getElementById('prodLoteSelect').value;
+            if(!loteSeleccionado) return alert("Debes seleccionar o crear un lote primero");
+
             cat.push({
                 nombre: document.getElementById('prodNombre').value,
-                lote: document.getElementById('prodLoteSelect').value,
+                lote: loteSeleccionado,
                 genero: document.getElementById('prodGenero').value,
                 talla: document.getElementById('prodTalla').value,
                 cuello: document.getElementById('prodCuello').value,
@@ -118,7 +144,12 @@
             actualizarTodo();
         }
 
-        function ajustarStock(i, c) { cat[i].stock += c; actualizarTodo(); }
+        function ajustarStock(i, c) { 
+            cat[i].stock += c; 
+            if(cat[i].stock < 0) cat[i].stock = 0;
+            actualizarTodo(); 
+        }
+        
         function eliminarLote(i) { lotes.splice(i, 1); actualizarTodo(); }
 
         function cambiarEstadoPago(i) {
@@ -140,7 +171,7 @@
             let nombre = document.getElementById('cliNombre').value;
             let tel = document.getElementById('cliTel').value;
             let dir = document.getElementById('cliDir').value;
-            if (idx === "" || isNaN(cant) || cant <= 0) return alert("Datos inválidos");
+            if (idx === "" || isNaN(cant) || cant <= 0) return alert("Datos de venta inválidos");
             
             let p = cat[idx];
             if(p.stock >= cant) {
@@ -152,11 +183,19 @@
                     cant, total: cant * p.precio, estado: document.getElementById('vEstadoPago').value 
                 });
                 actualizarTodo();
+                
+                // Limpiar campos venta manual
+                document.getElementById('cliNombre').value = "";
+                document.getElementById('cliTel').value = "";
+                document.getElementById('cliDir').value = "";
+                document.getElementById('vCant').value = "";
             } else alert("Stock insuficiente");
         }
 
         function actualizarTodo() {
-            localStorage.setItem('lotes', JSON.stringify(lotes)); localStorage.setItem('cat', JSON.stringify(cat)); localStorage.setItem('hist', JSON.stringify(hist));
+            localStorage.setItem('lotes', JSON.stringify(lotes)); 
+            localStorage.setItem('cat', JSON.stringify(cat)); 
+            localStorage.setItem('hist', JSON.stringify(hist));
 
             let htmlL = "";
             let selL = `<option value="">Seleccione Lote...</option>`;
@@ -187,7 +226,7 @@
                 let costoU = loteRef ? loteRef.costoUnit : 0;
                 if(v.estado === 'Pagado') { cap += (v.cant * costoU); gan += (v.total - (v.cant * costoU)); }
                 htmlV += `<tr class="${v.estado === 'Pagado' ? 'pagado' : 'pendiente'}">
-                <td>${v.cliente}</td><td>${v.tel}</td><td>${v.dir}</td><td>${v.detalle}</td><td>${v.cant}</td><td>$${v.total}</td>
+                <td>${v.cliente || 'Pedido Web'}</td><td>${v.tel || '-'}</td><td>${v.dir || '-'}</td><td>${v.detalle}</td><td>${v.cant}</td><td>$${v.total}</td>
                 <td><button onclick="cambiarEstadoPago(${i})">${v.estado}</button></td>
                 <td><button onclick="eliminarVenta(${i})" style="background:#c0392b">Eliminar</button></td></tr>`;
             });
@@ -195,6 +234,8 @@
             document.getElementById('resCap').innerText = "$" + Math.round(cap);
             document.getElementById('resGan').innerText = "$" + Math.round(gan);
         }
+        
+        // Carga inicial al abrir la página
         actualizarTodo();
     </script>
 </body>
