@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda SURVIVOR - Pedidos en Línea</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
+        .grid-tienda { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media(max-width: 768px) { .grid-tienda { grid-template-columns: 1fr; } }
+        .box { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e9ecef; }
+        h2 { color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; margin-top: 0; }
+        
+        /* Filtros y Formulario */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #495057; }
+        input, select { padding: 10px; width: 100%; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        input:focus, select:focus { border-color: #2980b9; outline: none; }
+        
+        /* Catálogo Visual */
+        .lista-productos { max-height: 450px; overflow-y: auto; padding-right: 5px; }
+        .item-producto { padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #2c3e50; background: #fdfefe; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; }
+        .item-producto.Hombre { border-left-color: #3498db; background-color: #f4f9fd; }
+        .item-producto.Mujer { border-left-color: #e91e63; background-color: #fdf5f7; }
+        .info-prod p { margin: 4px 0; }
+        .badge-stock { background: #27ae60; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .badge-stock.agotado { background: #c0392b; }
+        
+        button.btn-compra { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+        button.btn-compra:hover { background: #219150; }
+        .precio-tag { font-size: 18px; font-weight: bold; color: #2c3e50; }
+
+        /* Pie de página con botón de Administración */
+        footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e9ecef; text-align: center; font-size: 13px; color: #7f8c8d; }
+        .btn-admin-acceso { background: transparent; border: none; color: #bdc3c7; cursor: pointer; font-size: 12px; text-decoration: underline; margin-top: 5px; }
+        .btn-admin-acceso:hover { color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Catálogo de Pedidos SURVIVOR</h1>
+
+        <div class="grid-tienda">
+            <!-- Bloque Izquierdo: Selección de Producto -->
+            <div class="box">
+                <h2>1. Selecciona tu Prenda</h2>
+                
+                <div class="form-group">
+                    <label for="filtroGenero">Género</label>
+                    <select id="filtroGenero" onchange="renderizarCatalogoClientes()">
+                        <option value="Todos">Todos</option>
+                        <option value="Hombre">Hombre</option>
+                        <option value="Mujer">Mujer</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="vSelectPrendaCliente">Prenda Disponible</label>
+                    <select id="vSelectPrendaCliente" onchange="actualizarPrecioVista()"></select>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                        <div>
+                            <span style="color: #7f8c8d;">Precio Unitario:</span>
+                            <div class="precio-tag" id="precioUnitarioVista">$0</div>
+                        </div>
+                        <div style="width: 40%;">
+                            <label for="vCantCliente">Cantidad</label>
+                            <input type="number" id="vCantCliente" value="1" min="1" oninput="actualizarPrecioVista()">
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: right; margin-top: 15px; font-size: 18px; font-weight: bold; color: #27ae60;">
+                    Total Pedido: <span id="precioTotalVista">$0</span>
+                </div>
+            </div>
+
+            <!-- Bloque Derecho: Datos de Despacho / Formulario -->
+            <div class="box">
+                <h2>2. Datos de Envío y Contacto</h2>
+                <div class="form-group">
+                    <label for="cliNombreCliente">Nombre Completo</label>
+                    <input type="text" id="cliNombreCliente" placeholder="Ej. Juan Pérez">
+                </div>
+                <div class="form-group">
+                    <label for="cliTelCliente">Teléfono de Contacto</label>
+                    <input type="text" id="cliTelCliente" placeholder="Ej. +56912345678">
+                </div>
+                <div class="form-group">
+                    <label for="cliDirCliente">Dirección de Despacho</label>
+                    <input type="text" id="cliDirCliente" placeholder="Calle, Número, Comuna/Ciudad">
+                </div>
+
+                <button class="btn-compra" onclick="enviarPedidoCliente()">Confirmar y Solicitar Pedido</button>
+            </div>
+        </div>
+
+        <!-- Catálogo de referencia visual inferior -->
+        <div class="box" style="margin-top: 20px;">
+            <h2>Prendas Disponibles en Stock</h2>
+            <div class="lista-productos" id="listaVisualProductos"></div>
+        </div>
+
+        <!-- PIE DE PÁGINA CON ACCESO ADMINISTRADOR -->
+        <footer>
+            <p>© Sistema SURVIVOR. Todos los derechos reservados.</p>
+            <button class="btn-admin-acceso" onclick="ingresarComoAdmin()">Acceso Panel de Control</button>
+        </footer>
+    </div>
+
+    <script>
+        // Carga de datos compartidos desde el Administrador
+        let cat = JSON.parse(localStorage.getItem('cat')) || [];
+        let hist = JSON.parse(localStorage.getItem('hist')) || [];
+
+        function renderizarCatalogoClientes() {
+            let filtroG = document.getElementById('filtroGenero').value;
+            let select = document.getElementById('vSelectPrendaCliente');
+            let listaVisual = document.getElementById('listaVisualProductos');
+            
+            let htmlSelect = `<option value="">Selecciona una opción...</option>`;
+            let htmlVisual = "";
+
+            cat.forEach((p, i) => {
+                if (filtroG !== "Todos" && p.genero !== filtroG) return;
+
+                let descripcion = `${p.nombre} - ${p.genero} (${p.talla}) | ${p.cuello} - ${p.manga}`;
+                let stockBadge = p.stock > 0 ? `<span class="badge-stock">Disponibles: ${p.stock}</span>` : `<span class="badge-stock agotado">Agotado</span>`;
+
+                if (p.stock > 0) {
+                    htmlSelect += `<option value="${i}">${descripcion}</option>`;
+                }
+
+                htmlVisual += `
+                    <div class="item-producto ${p.genero}">
+                        <div class="info-prod">
+                            <p><strong>${p.nombre} (${p.genero})</strong></p>
+                            <p style="font-size:13px; color:#555;">Talla: ${p.talla} | Cuello: ${p.cuello} | Manga: ${p.manga}</p>
+                            ${stockBadge}
+                        </div>
+                        <div class="precio-tag">$${p.precio}</div>
+                    </div>`;
+            });
+
+            select.innerHTML = htmlSelect;
+            listaVisual.innerHTML = htmlVisual || "<p style='text-align:center; color:#7f8c8d;'>No hay productos disponibles con los filtros seleccionados.</p>";
+            actualizarPrecioVista();
+        }
+
+        function actualizarPrecioVista() {
+            let idx = document.getElementById('vSelectPrendaCliente').value;
+            let cant = parseInt(document.getElementById('vCantCliente').value) || 1;
+            
+            if (idx === "") {
+                document.getElementById('precioUnitarioVista').innerText = "$0";
+                document.getElementById('precioTotalVista').innerText = "$0";
+                return;
+            }
+
+            let p = cat[idx];
+            document.getElementById('precioUnitarioVista').innerText = `$${p.precio}`;
+            document.getElementById('precioTotalVista').innerText = `$${cant * p.precio}`;
+        }
+
+        function enviarPedidoCliente() {
+            let idx = document.getElementById('vSelectPrendaCliente').value;
+            let cant = parseInt(document.getElementById('vCantCliente').value);
+            let nombre = document.getElementById('cliNombreCliente').value.trim();
+            let tel = document.getElementById('cliTelCliente').value.trim();
+            let dir = document.getElementById('cliDirCliente').value.trim();
+
+            if (idx === "" || isNaN(cant) || cant <= 0) return alert("Por favor, selecciona una prenda y cantidad válida.");
+            if (!nombre || !tel || !dir) return alert("Por favor, completa todos tus datos de envío.");
+
+            cat = JSON.parse(localStorage.getItem('cat')) || [];
+            hist = JSON.parse(localStorage.getItem('hist')) || [];
+            
+            let p = cat[idx];
+
+            if (p.stock >= cant) {
+                p.stock -= cant; 
+                
+                hist.push({ 
+                    cliente: nombre, tel: tel, dir: dir,
+                    prodNombre: p.nombre, lote: p.lote, genero: p.genero, talla: p.talla, cuello: p.cuello, manga: p.manga,
+                    detalle: `Lote: ${p.lote} | ${p.genero} | ${p.talla} | ${p.cuello}`, 
+                    cant, total: cant * p.precio, estado: "Pendiente" 
+                });
+
+                localStorage.setItem('cat', JSON.stringify(cat));
+                localStorage.setItem('hist', JSON.stringify(hist));
+
+                alert("¡Tu pedido ha sido registrado con éxito! Nos pondremos en contacto contigo.");
+                
+                document.getElementById('cliNombreCliente').value = "";
+                document.getElementById('cliTelCliente').value = "";
+                document.getElementById('cliDirCliente').value = "";
+                document.getElementById('vCantCliente').value = 1;
+                
+                renderizarCatalogoClientes();
+            } else {
+                alert(`Lo sentimos, solo quedan ${p.stock} unidades disponibles de esta prenda.`);
+            }
+        }
+
+        // LÓGICA DE ACCESO SEGURO AL PANEL DE ADMINISTRACIÓN
+        function ingresarComoAdmin() {
+            // Puedes cambiar "admin123" por la clave privada que prefieras
+            let claveCorrecta = "admin123"; 
+            let intento = prompt("Ingrese la contraseña de administrador:");
+            
+            if (intento === claveCorrecta) {
+                // Al estar en la misma carpeta local o mismo repositorio, busca el archivo panel.html
+                window.location.href = "panel.html"; 
+            } else if (intento !== null) {
+                alert("Contraseña incorrecta.");
+            }
+        }
+
+        renderizarCatalogoClientes();
+    </script>
+</body>
+</html>

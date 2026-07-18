@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema SURVIVOR - Gestión Integral</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .box { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+        input, select { padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 8px 12px; cursor: pointer; background: #2c3e50; color: white; border: none; border-radius: 4px; margin: 2px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #34495e; color: white; }
+        .pagado { background-color: #d4edda !important; }
+        .pendiente { background-color: #fff3cd !important; }
+        .fila-hombre { background-color: #e3f2fd !important; }
+        .fila-mujer { background-color: #fce4ec !important; }
+    </style>
+</head>
+<body>
+
+    <h1>Panel de Gestión SURVIVOR</h1>
+
+    <div class="box">
+        <h2>1. Gestión de Inversión por Lote</h2>
+        <div class="grid">
+            <input type="text" id="iNombreLote" placeholder="Nombre del Lote">
+            <input type="number" id="iTela" placeholder="Inversión Tela $">
+            <input type="number" id="iConf" placeholder="Inversión Conf. $">
+            <input type="number" id="iCant" placeholder="Cantidad Prendas">
+        </div>
+        <button onclick="registrarLote()" style="background: #2980b9;">Registrar Lote</button>
+        <table id="tablaLotes">
+            <thead>
+                <tr><th>Lote</th><th>Tela</th><th>Conf.</th><th>Suma</th><th>Cant.</th><th>Costo Unit.</th><th>Acción</th></tr>
+            </thead>
+            <tbody id="bodyLotes"></tbody>
+        </table>
+    </div>
+
+    <div class="box">
+        <h2>2. Catálogo (Productos)</h2>
+        <div class="grid">
+            <input type="text" id="prodNombre" placeholder="Nombre" value="Polera">
+            <select id="prodLoteSelect"></select>
+            <select id="prodGenero"><option>Hombre</option><option>Mujer</option></select>
+            <select id="prodTalla"><option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option></select>
+            <select id="prodCuello" onchange="ajustarPrecioAutomatico()">
+                <option value="Cuello Polo">Cuello Polo</option>
+                <option value="Cuello Medio">Cuello Medio</option>
+                <option value="Cuello Piqué">Cuello Piqué</option>
+                <option value="Cuello Beatle">Cuello Beatle</option>
+            </select>
+            <select id="prodManga"><option>Manga Corta</option><option>Manga Larga</option></select>
+            <input type="number" id="prodPrecio" placeholder="Precio Venta $">
+            <input type="number" id="prodStock" placeholder="Stock Inicial">
+        </div>
+        <button onclick="agregarPrenda()">Agregar al Catálogo</button>
+        <table id="tablaCatalogo"></table>
+    </div>
+
+    <div class="box">
+        <h2>3. Registro de Ventas</h2>
+        <div class="grid">
+            <input type="text" id="cliNombre" placeholder="Nombre Cliente">
+            <input type="text" id="cliTel" placeholder="Teléfono">
+            <input type="text" id="cliDir" placeholder="Dirección">
+            <select id="vSelectPrenda"></select>
+            <input type="number" id="vCant" placeholder="Cantidad (Unidad)">
+            <select id="vEstadoPago"><option value="Pagado">Pagado</option><option value="Pendiente">Pendiente</option></select>
+        </div>
+        <button onclick="registrarVenta()" style="background: #27ae60;">Registrar Venta</button>
+    </div>
+
+    <div class="box">
+        <h2>4. Historial y Resumen</h2>
+        <p><strong>Capital Recuperado:</strong> <span id="resCap">$0</span> | <strong>Ganancia Total:</strong> <span id="resGan">$0</span></p>
+        <table id="tablaVentas"></table>
+    </div>
+
+    <script>
+        let lotes = JSON.parse(localStorage.getItem('lotes')) || [];
+        let cat = JSON.parse(localStorage.getItem('cat')) || [];
+        let hist = JSON.parse(localStorage.getItem('hist')) || [];
+
+        function ajustarPrecioAutomatico() {
+            let cuello = document.getElementById('prodCuello').value;
+            let precioInput = document.getElementById('prodPrecio');
+            if (cuello === "Cuello Polo") precioInput.value = 13000;
+            else if (cuello === "Cuello Medio") precioInput.value = 14000;
+        }
+
+        ajustarPrecioAutomatico();
+
+        function registrarLote() {
+            let nombre = document.getElementById('iNombreLote').value;
+            let tela = parseFloat(document.getElementById('iTela').value) || 0;
+            let conf = parseFloat(document.getElementById('iConf').value) || 0;
+            let cant = parseInt(document.getElementById('iCant').value) || 0;
+            let sumaInversion = tela + conf;
+            let costoUnit = cant > 0 ? (sumaInversion) / cant : 0;
+            lotes.push({ nombre, tela, conf, sumaInversion, cant, costoUnit });
+            actualizarTodo();
+        }
+
+        function agregarPrenda() {
+            cat.push({
+                nombre: document.getElementById('prodNombre').value,
+                lote: document.getElementById('prodLoteSelect').value,
+                genero: document.getElementById('prodGenero').value,
+                talla: document.getElementById('prodTalla').value,
+                cuello: document.getElementById('prodCuello').value,
+                manga: document.getElementById('prodManga').value,
+                precio: parseFloat(document.getElementById('prodPrecio').value) || 0,
+                stock: parseInt(document.getElementById('prodStock').value) || 0
+            });
+            actualizarTodo();
+        }
+
+        function ajustarStock(i, c) { cat[i].stock += c; actualizarTodo(); }
+        function eliminarLote(i) { lotes.splice(i, 1); actualizarTodo(); }
+
+        function cambiarEstadoPago(i) {
+            hist[i].estado = hist[i].estado === 'Pagado' ? 'Pendiente' : 'Pagado';
+            actualizarTodo();
+        }
+
+        function eliminarVenta(i) {
+            let venta = hist[i];
+            let prodIndex = cat.findIndex(p => p.nombre === venta.prodNombre && p.lote === venta.lote && p.genero === venta.genero && p.talla === venta.talla && p.cuello === venta.cuello && p.manga === venta.manga);
+            if(prodIndex !== -1) cat[prodIndex].stock += venta.cant;
+            hist.splice(i, 1);
+            actualizarTodo();
+        }
+
+        function registrarVenta() {
+            let idx = document.getElementById('vSelectPrenda').value;
+            let cant = parseInt(document.getElementById('vCant').value);
+            let nombre = document.getElementById('cliNombre').value;
+            let tel = document.getElementById('cliTel').value;
+            let dir = document.getElementById('cliDir').value;
+            if (idx === "" || isNaN(cant) || cant <= 0) return alert("Datos inválidos");
+            
+            let p = cat[idx];
+            if(p.stock >= cant) {
+                p.stock -= cant;
+                hist.push({ 
+                    cliente: nombre, tel: tel, dir: dir,
+                    prodNombre: p.nombre, lote: p.lote, genero: p.genero, talla: p.talla, cuello: p.cuello, manga: p.manga,
+                    detalle: `Lote: ${p.lote} | ${p.genero} | ${p.talla} | ${p.cuello}`, 
+                    cant, total: cant * p.precio, estado: document.getElementById('vEstadoPago').value 
+                });
+                actualizarTodo();
+            } else alert("Stock insuficiente");
+        }
+
+        function actualizarTodo() {
+            localStorage.setItem('lotes', JSON.stringify(lotes)); localStorage.setItem('cat', JSON.stringify(cat)); localStorage.setItem('hist', JSON.stringify(hist));
+
+            let htmlL = "";
+            let selL = `<option value="">Seleccione Lote...</option>`;
+            lotes.forEach((l, i) => {
+                htmlL += `<tr><td>${l.nombre}</td><td>$${l.tela}</td><td>$${l.conf}</td><td>$${l.sumaInversion}</td><td>${l.cant}</td><td>$${Math.round(l.costoUnit)}</td>
+                <td><button onclick="eliminarLote(${i})" style="background:#c0392b">Eliminar</button></td></tr>`;
+                selL += `<option value="${l.nombre}">${l.nombre}</option>`;
+            });
+            document.getElementById('bodyLotes').innerHTML = htmlL;
+            document.getElementById('prodLoteSelect').innerHTML = selL;
+
+            let htmlCat = `<tr><th>Producto</th><th>Stock</th><th>Acción</th></tr>`;
+            let selV = `<option value="">Seleccione...</option>`;
+            cat.forEach((p, i) => {
+                htmlCat += `<tr class="${p.genero === 'Hombre' ? 'fila-hombre' : 'fila-mujer'}">
+                <td>Lote: ${p.lote} | ${p.genero} | ${p.talla} | ${p.cuello}</td><td>${p.stock}</td>
+                <td><button onclick="ajustarStock(${i}, 1)">+</button><button onclick="ajustarStock(${i}, -1)">-</button>
+                <button onclick="cat.splice(${i},1);actualizarTodo()" style="background:#c0392b">X</button></td></tr>`;
+                selV += `<option value="${i}">Lote: ${p.lote} | ${p.genero} | ${p.talla} | ${p.cuello}</option>`;
+            });
+            document.getElementById('tablaCatalogo').innerHTML = htmlCat;
+            document.getElementById('vSelectPrenda').innerHTML = selV;
+
+            let htmlV = `<tr><th>Cliente</th><th>Teléfono</th><th>Dirección</th><th>Detalle</th><th>Cant.</th><th>Total</th><th>Estado</th><th>Acción</th></tr>`;
+            let cap = 0, gan = 0;
+            hist.forEach((v, i) => {
+                let loteRef = lotes.find(l => l.nombre === v.lote);
+                let costoU = loteRef ? loteRef.costoUnit : 0;
+                if(v.estado === 'Pagado') { cap += (v.cant * costoU); gan += (v.total - (v.cant * costoU)); }
+                htmlV += `<tr class="${v.estado === 'Pagado' ? 'pagado' : 'pendiente'}">
+                <td>${v.cliente}</td><td>${v.tel}</td><td>${v.dir}</td><td>${v.detalle}</td><td>${v.cant}</td><td>$${v.total}</td>
+                <td><button onclick="cambiarEstadoPago(${i})">${v.estado}</button></td>
+                <td><button onclick="eliminarVenta(${i})" style="background:#c0392b">Eliminar</button></td></tr>`;
+            });
+            document.getElementById('tablaVentas').innerHTML = htmlV;
+            document.getElementById('resCap').innerText = "$" + Math.round(cap);
+            document.getElementById('resGan').innerText = "$" + Math.round(gan);
+        }
+        actualizarTodo();
+    </script>
+</body>
+</html>
